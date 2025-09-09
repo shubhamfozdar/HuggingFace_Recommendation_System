@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hugging Face Model Recommender</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #FF9D00;
+      --primary-dark: #e58e00;
+      --secondary-color: #FFD166;
+      --dark-color: #333;
+      --light-color: #f8f9fa;
+      --hf-color: #FFD166;
+      --accent-color: #06D6A0;
+      --accent-dark: #05b586;
+      --gray-100: #f8f9fa;
+      --gray-200: #e9ecef;
+      --gray-300: #dee2e6;
+      --gray-400: #ced4da;
+      --gray-500: #adb5bd;
+      --gray-600: #6c757d;
+      --gray-700: #495057;
+      --gray-800: #343a40;
+      --gray-900: #212529;
+    }
+    
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--gray-100);
+      color: var(--gray-800);
+      line-height: 1.7;
+    }
+    
+    .gradient-header {
+      background: linear-gradient(135deg, #FF9D00 0%, #FFD166 100%);
+      position: relative;
+      padding: 5rem 0 8rem;
+      border-radius: 0 0 30% 30% / 60px;
+      margin-bottom: 0;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .gradient-header::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+      opacity: 0.1;
+    }
+    
+    .header-content {
+      max-width: 800px;
+      margin: 0 auto;
+      color: white;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .header-title {
+      font-weight: 800;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      text-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+      letter-spacing: -0.5px;
+    }
+    
+    .header-subtitle {
+      font-weight: 400;
+      opacity: 0.9;
+      font-size: 1.2rem;
+      text-shadow: 0px 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    .search-container {
+      background-color: white;
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      margin-top: -5rem;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+      z-index: 10;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .search-container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    }
+    
+    .main-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+    
+    .form-control, .form-select {
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
+      border: 1px solid var(--gray-300);
+      box-shadow: none !important;
+      transition: all 0.2s ease;
+      font-size: 1.05rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(255, 157, 0, 0.15) !important;
+    }
+    
+    .form-label {
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(255, 157, 0, 0.2);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(255, 157, 0, 0.3);
+    }
+    
+    .btn-primary:active {
+      transform: translateY(-1px);
+    }
+    
+    .task-badge {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      border-radius: 20px;
+      padding: 0.4rem 1.2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 10px rgba(255, 157, 0, 0.2);
+    }
+    
+    .confidence-meter {
+      width: 100%;
+      background-color: var(--gray-200);
+      height: 10px;
+      border-radius: 5px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .confidence-value {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      border-radius: 5px;
+      transition: width 1s ease-out;
+    }
+    
+    .model-card {
+      border-radius: 1.2rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+      height: 100%;
+      border: none;
+      overflow: hidden;
+      background: white;
+      position: relative;
+    }
+    
+    .model-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+      background: linear-gradient(to right, var(--gray-100), white);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 1.2rem;
+    }
+    
+    .model-author {
+      color: var(--gray-600);
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+    }
+    
+    .model-author::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-color);
+      margin-right: 8px;
+    }
+    
+    .model-name {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--gray-900);
+    }
+    
+    .model-stats {
+      display: flex;
+      gap: 1.2rem;
+      color: var(--gray-700);
+      font-size: 0.85rem;
+      margin-top: 0.8rem;
+    }
+    
+    .model-stats span {
+      display: flex;
+      align-items: center;
+      padding: 0.3rem 0.8rem;
+      background-color: var(--gray-100);
+      border-radius: 100px;
+      transition: all 0.2s;
+    }
+    
+    .model-stats span:hover {
+      background-color: var(--gray-200);
+    }
+    
+    .model-stats i {
+      margin-right: 5px;
+      color: var(--primary-color);
+    }
+    
+    .model-desc {
+      font-size: 0.95rem;
+      color: var(--gray-700);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;  
+      overflow: hidden;
+      height: 4.8rem;
+      line-height: 1.6;
+    }
+    
+    .tag {
+      background-color: var(--gray-100);
+      color: var(--gray-700);
+      border-radius: 100px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.8rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+      transition: all 0.2s;
+      border: 1px solid var(--gray-200);
+    }
+    
+    .tag:hover {
+      background-color: var(--gray-200);
+      transform: translateY(-2px);
+    }
+    
+    .tag i {
+      color: var(--primary-color);
+      margin-right: 4px;
+    }
+    
+    .loader {
+      display: none;
+      text-align: center;
+      padding: 3rem;
+    }
+    
+    .loader-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 157, 0, 0.1);
+      border-radius: 50%;
+      border-left-color: var(--primary-color);
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .tasks-container {
+      margin-top: 4rem;
+      margin-bottom: 3rem;
+      background-color: white;
+      border-radius: 1.2rem;
+      padding: 1.5rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .tasks-container h5 {
+      font-weight: 600;
+      color: var(--gray-800);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+    }
+    
+    .tasks-container h5::before {
+      content: "🔍";
+      margin-right: 8px;
+      font-size: 1.2rem;
+    }
+    
+    .task-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .task-pill {
+      display: inline-block;
+      background: linear-gradient(to right, white, var(--gray-100));
+      padding: 0.6rem 1.2rem;
+      border-radius: 100px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: all 0.3s;
+      border: 1px solid var(--gray-200);
+      color: var(--gray-800);
+    }
+    
+    .task-pill:hover {
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      border-color: transparent;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(255, 157, 0, 0.2);
+    }
+    
+    .card-footer {
+      background-color: white;
+      border-top: 1px solid var(--gray-200);
+      padding: 1rem;
+    }
+    
+    .btn-outline-primary {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+      border-radius: 100px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    .btn-outline-primary:hover {
+      background-color: var(--primary-color);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 157, 0, 0.2);
+    }
+    
+    footer {
+      margin-top: 5rem;
+      padding: 3rem 0;
+      background-color: var(--gray-800);
+      color: white;
+      text-align: center;
+    }
+    
+    footer p {
+      margin-bottom: 0;
+      opacity: 0.8;
+    }
+    
+    footer a {
+      color: var(--secondary-color);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    footer a:hover {
+      color: var(--primary-color);
+      text-decoration: underline;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .results-container {
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    .model-card {
+      animation: fadeIn 0.6s ease-out;
+      animation-fill-mode: both;
+    }
+    
+    .col:nth-child(1) .model-card { animation-delay: 0.1s; }
+    .col:nth-child(2) .model-card { animation-delay: 0.2s; }
+    .col:nth-child(3) .model-card { animation-delay: 0.3s; }
+    .col:nth-child(4) .model-card { animation-delay: 0.4s; }
+    .col:nth-child(5) .model-card { animation-delay: 0.5s; }
+    .col:nth-child(6) .model-card { animation-delay: 0.6s; }
+    
+    /* Quality badge */
+    .quality-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    
+    .quality-high {
+      background-color: rgba(6, 214, 160, 0.15);
+      color: #06D6A0;
+    }
+    
+    .quality-medium {
+      background-color: rgba(255, 209, 102, 0.15);
+      color: #FFD166;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      .header-title {
+        font-size: 2rem;
+      }
+      
+      .gradient-header {
+        padding: 3rem 0 6rem;
+      }
+      
+      .search-container {
+        padding: 1.5rem;
+        margin-top: -3rem;
+      }
+      
+      .task-pill {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="gradient-header">
+    <div class="header-content text-center">
+      <h1 class="header-title">🤗 Hugging Face Model Recommender</h1>
+      <p class="header-subtitle">Find the perfect AI model for your task</p>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- Search Form -->
+    <div class="search-container mb-4">
+      <form method="POST" id="searchForm">
+        <div class="row g-3">
+          <div class="col-md-12 mb-3">
+            <label for="prompt" class="form-label">Describe your task</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0">
+                <i class="fas fa-lightbulb text-warning"></i>
+              </span>
+              <input type="text" name="prompt" id="prompt" class="form-control form-control-lg border-start-0" 
+                    placeholder="E.g., I need to summarize long research papers" 
+                    value="{{ prompt }}" required>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <label for="sort_by" class="form-label">
+              <i class="fas fa-sort me-1 text-primary"></i> Sort by
+            </label>
+            <select name="sort_by" id="sort_by" class="form-select">
+              <option value="downloads" {% if sort_by == "downloads" %}selected{% endif %}>Downloads (Most Popular)</option>
+              <option value="likes" {% if sort_by == "likes" %}selected{% endif %}>Likes (Most Liked)</option>
+            </select>
+          </div>
+          
+          <div class="col-md-4">
+            <label for="limit" class="form-label">
+              <i class="fas fa-list-ol me-1 text-primary"></i> Results
+            </label>
+            <select name="limit" id="limit" class="form-select">
+              <option value="5" {% if limit == 5 %}selected{% endif %}>Top 5 models</option>
+              <option value="10" {% if limit == 10 %}selected{% endif %}>Top 10 models</option>
+              <option value="20" {% if limit == 20 %}selected{% endif %}>Top 20 models</option>
+            </select>
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label d-md-block d-none">&nbsp;</label>
+            <button type="submit" class="btn btn-primary w-100" id="searchBtn">
+              <i class="fas fa-search me-2"></i> Find Models
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Quick Task Pills -->
+    <div class="tasks-container">
+      <h5>Popular tasks</h5>
+      <div class="task-pills">
+        {% for task_id, task_desc in tasks.items() %}
+          <span class="task-pill" onclick="setTask('{{ task_desc }}')">{{ task_id.replace('-', ' ').title() }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <!-- Loading indicator -->
+    <div class="loader" id="loader">
+      <div class="loader-spinner mb-3"></div>
+      <p class="text-muted">Finding the best models for you...</p>
+    </div>
+
+    <!-- Error message -->
+    {% if error %}
+    <div class="alert alert-danger shadow-sm" role="alert">
+      <i class="fas fa-exclamation-circle me-2"></i>
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <!-- Results -->
+    {% if recommendations %}
+      <div class="results-container mt-5">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <div>
+            <h4 class="mb-2 fw-bold">Detected Task: <span class="task-badge ms-2">{{ task.replace('-', ' ').title() }}</span></h4>
+            <div class="d-flex align-items-center">
+              <span class="me-2">Confidence: <strong>{{ confidence }}%</strong></span>
+              <div class="confidence-meter">
+                <div class="confidence-value" style="width: {{ confidence }}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+          {% for model in recommendations %}
+          <div class="col">
+            <div class="card model-card">
+              {% if model.downloads > 1000000 %}
+                <span class="quality-badge quality-high">Top Model</span>
+              {% elif model.downloads > 100000 %}
+                <span class="quality-badge quality-medium">Popular</span>
+              {% endif %}
+              <div class="card-header">
+                <div class="model-author">{{ model.author }}</div>
+                <h5 class="model-name">
+                  <a href="{{ model.link }}" target="_blank" class="text-decoration-none text-dark">
+                    {{ model.name }}
+                  </a>
+                </h5>
+                <div class="model-stats">
+                  <span><i class="fas fa-download"></i> {{ "{:,}".format(model.downloads) }}</span>
+                  <span><i class="fas fa-heart"></i> {{ model.likes }}</span>
+                </div>
+              </div>
+              <div class="card-body">
+                {% if model.description %}
+                <p class="model-desc">{{ model.description }}</p>
+                {% else %}
+                <p class="model-desc text-muted fst-italic">No description available</p>
+                {% endif %}
+                
+                <div class="mt-3">
+                  <span class="tag"><i class="fas fa-tag"></i> {{ model.pipeline_tag }}</span>
+                  {% if model.languages %}
+                    {% for lang in model.languages[:3] %}
+                    <span class="tag"><i class="fas fa-language"></i> {{ lang }}</span>
+                    {% endfor %}
+                  {% endif %}
+                </div>
+              </div>
+              <div class="card-footer">
+                <a href="{{ model.link }}" class="btn btn-sm btn-outline-primary w-100" target="_blank">
+                  <i class="fas fa-external-link-alt me-1"></i> View on Hugging Face
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>Powered by <a href="https://huggingface.co/" target="_blank">Hugging Face</a> and sentence-transformers</p>
+      <p class="mt-2"><small>© 2025 Hugging Face Model Recommender</small></p>
+    </div>
+  </footer>
+  
+  <script>
+    document.getElementById('searchForm').addEventListener('submit', function() {
+      document.getElementById('loader').style.display = 'block';
+      document.getElementById('searchBtn').disabled = true;
+      document.getElementById('searchBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Searching...';
+    });
+    
+    function setTask(taskDesc) {
+      document.getElementById('prompt').value = taskDesc;
+      document.getElementById('searchForm').submit();
+    }
+    
+    // Animate elements when they come into view
+    document.addEventListener('DOMContentLoaded', function() {
+      if ('IntersectionObserver' in window) {
+        const cards = document.querySelectorAll('.model-card');
+        
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.style.opacity = 1;
+              entry.target.style.transform = 'translateY(0)';
+            }
+          });
+        }, { threshold: 0.1 });
+        
+        cards.forEach(card => {
+          observer.observe(card);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
